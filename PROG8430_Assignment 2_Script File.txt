@@ -1,0 +1,328 @@
+######################################################################PROG8430_Assignment 2 - Script File#################################################################################
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##################################################
+### Basic Set Up                                ##
+##################################################
+```{r}
+# Clear plots
+if(!is.null(dev.list())) dev.off()
+# Clear console
+cat("\014") 
+# Clean workspace
+rm(list=ls())
+```
+
+## PART 1
+
+```{r}
+# Read the data Assign#2_1.txt
+data_set = read.table("Assign#2_1.txt", header = TRUE,sep = ",")
+
+head(data_set)
+
+# Removing Index Column
+
+data_set <- data_set[,-c(1)]
+
+head(data_set)
+```
+
+## Data Transformation and Preparation
+### QUESTION 1: Initial Transformation
+```{r}
+# a. Append your initials to all variables in the data frame
+
+new_names <- paste0(names(data_set), "_kv")
+
+colnames(data_set) <- new_names
+
+colnames(data_set)
+```
+
+```{r}
+# b. Transform character variables to factor variables.
+
+# To check for character variables
+str(data_set)
+
+# Converting character variables to factor variables
+data_set$Manufacturer_kv <- factor(data_set$Manufacturer_kv)
+data_set$Server_kv <- factor(data_set$Server_kv)
+
+#check if char variables are changed to factor variables
+str(data_set)
+
+```
+### QUESTION 2: Outliers
+
+```{r,out.width='50%'}
+##################### a. Use an appropriate technique demonstrated in class to identify outliers.
+##################### b. Comment on any outliers you see and deal with them appropriately. 
+#####################    Make sure you explain why you dealt with them the way you decided to.
+
+### Box Plots for 1.5 IQR
+#As for all numerical data, check Box Plots
+
+boxplot(data_set$Conn_kv, horizontal=TRUE, pch=20,main = "Connections Made",col="Orange")
+boxplot(data_set$RC_kv, horizontal=TRUE, pch=20,main = "Reconnections Made",col="Light Blue")
+boxplot(data_set$ST_kv, horizontal=TRUE, pch=20,main = "Sessions Timed-Out",col="Pink")
+boxplot(data_set$SMBR_kv, horizontal=TRUE, pch=20,
+        main = "Server Messages Block Received",col="Light Pink")
+boxplot(data_set$SMBT_kv, horizontal=TRUE, pch=20,
+        main = "Server Messages Block Transmitted",col="Maroon")
+boxplot(data_set$BR_kv, horizontal=TRUE, pch=20,main = "Bytes Received",col="Yellow")
+boxplot(data_set$BT_kv, horizontal=TRUE, pch=20,main = "Bytes Transmitted",col="Dark Orange")
+boxplot(data_set$UC_kv, horizontal=TRUE, pch=20,main = "Use Count",col="Blue")
+boxplot(data_set$FA_kv, horizontal=TRUE, pch=20,main = "Files Accessed",col="Violet")
+```
+
+###### Analysis on box Plot
+
+We could see that all columns have outliers, lets come to conclusion after looking into the density Plots.
+
+
+```{r}
+### Density plot for further details
+
+library("lattice")
+```
+
+
+```{r,out.width='50%'}
+densityplot( ~ data_set$Conn_kv, pch=6, xlab = "Connections Made")
+densityplot( ~ data_set$RC_kv, pch=6, xlab = "Reconnections Made")
+densityplot( ~ data_set$ST_kv, pch=6, xlab = "Sessions Timed-Out")
+densityplot( ~ data_set$SMBR_kv, pch=6, xlab = "Server Message Blocks Received")
+densityplot( ~ data_set$SMBT_kv, pch=6, xlab = "Server Message Blocks Transmitted")
+densityplot( ~ data_set$BR_kv, pch=6,xlab = "Bytes Received")
+densityplot( ~ data_set$BT_kv, pch=6, xlab = "Bytes Transmitted")
+densityplot( ~ data_set$UC_kv, pch=6, xlab = "Use Count")
+densityplot( ~ data_set$FA_kv, pch=6, xlab = "Files Accessed")
+```
+###### Analysis about Outliers of each attribute based on Density Plot
+
+```{r}
+### To ensure if there are only two distinct values in the Use column.
+
+cat("Number of unique values in the dataset that belongs to use count: ",unique(data_set$UC_kv))
+
+### Count number of values in the dataset that belongs to use count > 2000.
+
+use_count_values <- data_set[data_set$UC_kv != 2000,]
+
+
+cat("Number of values in the dataset that belongs to use count > 2000: ",nrow(use_count_values))
+
+cat ('\nFINAL CONCLUSION\n')
+
+cat ("There are only 167 observation available for 2001 out of complete set of observations that is 82156. Hence, it can be concluded that those are special cases hence it is less in count. But these are required observations.")
+
+```
+###### Let's Analyze categorical values for outliers
+
+```{r,out.width='50%'}
+barplot(table(data_set$Manufacturer_kv), cex.names=.75,col='blue',main = "Name of the Manufacturer")
+barplot(table(data_set$Server_kv), cex.names=.75,col='Light blue',main = "Server Model Number")
+```
+###### From Bar Plot Analysis, there are no outliers.
+
+### QUESTION 3: Reduce Dimensionality
+
+##### a. Apply the missing value filter to remove appropriate columns of data.
+
+
+```{r}
+###### Step1: Print blank data cells
+blank_data_cells <- data_set[data_set == ""]
+print("Number of blank cells in the dataset are:")
+print(blank_data_cells)
+
+
+na_data_cells <- data_set[data_set == "NA"]
+print("Number of NA cells in the dataset are:")
+print(na_data_cells)
+
+print("Answer: As there are no blank cells, hence no need to find the missing value ratio.")
+
+```
+##### b. Apply the low variance filter to remove appropriate columns of data.
+
+```{r}
+library("pastecs")
+##### 2. Identify Low Variance
+stat.desc(data_set) 
+
+print("Answer: All the attributes has coefficient value more or less comes under the same range. Hence not removing any.")
+```
+##### c. Apply the high correlation filter to remove appropriate columns of data.
+
+```{r}
+
+data_set_num <- data_set[,-c(1,2,3)]
+
+corr_mat <- round(cor(data_set_num),2) 
+
+print(head(corr_mat))
+
+print("Answer: From the output received, it is very evident that the pair: SMBR_KV and BR_KV  \n
+and pair: SMBT_KV and BT_KV has high correlation with 0.99 and also both refers to the same context.\n
+Hence removing BR_KV and BT_KV ")
+
+### Dataset before removing BR_KV and BT_KV
+print(head(data_set))
+
+data_set <- data_set[,-c(8,9)]
+
+### Dataset after removing BR_KV and BT_KV
+print(head(data_set))
+```
+##### d. Drop any variables that do not contribute any useful analytical information at all.
+
+```{r}
+print("Attribute:\"Manufacturer_kv\", does not contribute much value to the prediction or training of model.Hence removing the attribute \"Manufacturer_kv\"")
+
+data_set <- data_set[,-1]
+
+print(head(data_set))
+
+```
+## PART 2 (12 points) Please use the Dataset “Assign#2_2.txt” to answer following questions.
+
+```{r}
+# Clear plots
+if(!is.null(dev.list())) dev.off()
+# Clear console
+cat("\014") 
+# Clean workspace
+rm(list=ls())
+```
+```{r}
+# Read the data Assign#2_2.txt
+
+dataset = read.table("Assign#2_2.txt", header = TRUE,sep = ",")
+print(head(dataset))
+
+```
+### 1. Data Transformation 
+
+```{r}
+#1. Rename all variables with your initials appended (just as was done in assignment 1) 
+
+new_names <- paste0(names(dataset), "_kv")
+
+colnames(dataset) <- new_names
+
+colnames(dataset)
+
+# 2. Standardize all of the variables using either of the two functions demonstrated in class.
+#    Describe why you chose the method you did.
+
+# Lets analyze the distribution of data, before coming to an conclusion.
+summary(dataset)
+
+# From summary, we got to know that values of all the attributes comes in between the range 0 to 1. Hence doing preprocess to make the values to lie between 0 and 1 is not needed. Hence we will use scale function so that data will have zero mean and data can be adjusted based on its spread.
+
+dataset1 <- scale(dataset)
+
+print(head(dataset1))
+```
+### 2. Descriptive Data Analysis 
+
+```{r,out.width='50%'}
+# 1. Create graphical summaries of the data (as demonstrated in class: boxplots, histograms or density plots) and comment on any observations you make.
+
+boxplot(dataset$Food_kv, horizontal=TRUE, pch=20,main = "Perecentage of Income Spent on Food",col="Orange")
+boxplot(dataset$Enter_kv, horizontal=TRUE, pch=20,main = "Perecentage of Income Spent on Entertainment",col="Pink")
+boxplot(dataset$Edu_kv, horizontal=TRUE, pch=20,main = "Perecentage of Income Spent on Education",col="Maroon")
+boxplot(dataset$Trans_kv, horizontal=TRUE, pch=20,main = "Perecentage of Income Spent on Transporation",col="Red")
+boxplot(dataset$Work_kv, horizontal=TRUE, pch=20,main = "Perecentage of Income Spent on Work Related Expenses",col="Light Blue")
+boxplot(dataset$House_kv, horizontal=TRUE, pch=20,main = "Perecentage of Income Spent on Housing",col="Light Green")
+boxplot(dataset$Oth_kv, horizontal=TRUE, pch=20,main = "Perecentage of Income Spent on Other Expenses",col="Brown")
+```
+```{r,out.width='50%'}
+#### Density plot
+
+densityplot( ~ dataset$Food_kv, pch=6,,main = "Percentage of Income Spent on Food",col="Orange")
+densityplot( ~ dataset$Enter_kv, pch=6,,main = "Percentage of Income Spent on Entertainment",col="Pink")
+densityplot( ~ dataset$Edu_kv, pch=6,,main = "Percentage of Income Spent on Education",col="Maroon")
+densityplot( ~ dataset$Trans_kv, pch=6,,main = "Percentage of Income Spent on Transporation",col="Red")
+densityplot( ~ dataset$Work_kv, pch=6,,main = "Percentage of Income Spent on Work Related Expenses",col="Light Blue")
+densityplot( ~ dataset$House_kv, pch=6,,main =  "Percentage of Income Spent on Housing",col="Light Green")
+densityplot( ~ dataset$Oth_kv, pch=6,,main = "Percentage of Income Spent on Other Expenses",col="Brown")
+
+```
+###  3. Clustering 
+
+```{r}
+# Using the K-Means procedure as demonstrated in class, create clusters 
+# with k=2,3,4,5,6,7. 
+# You will be using only two variables as your centroids (House and Food)
+
+# Create a dataframe for centroids
+
+centroids <- c("House_kv", "Food_kv")
+df_centroid <- dataset1[,centroids]
+
+################### Question 1: Create segmentation/cluster schemes for k=2,3,4,5,6,7. 
+
+# k = 2
+kmeans_result_2 <- kmeans(df_centroid, centers = 2, nstart = 25)
+
+# k = 3
+kmeans_result_3 <- kmeans(df_centroid, centers = 3, nstart = 25)
+
+# k = 4
+kmeans_result_4 <- kmeans(df_centroid, centers = 4, nstart = 25)
+
+# k = 5
+kmeans_result_5 <- kmeans(df_centroid, centers = 5, nstart = 25)
+
+# k = 6
+kmeans_result_6 <- kmeans(df_centroid, centers = 6, nstart = 25)
+
+# k = 7
+kmeans_result_7 <- kmeans(df_centroid, centers = 7, nstart = 25)
+  
+
+```
+```{r}
+# Visualize the results
+
+library("factoextra")
+
+p1 <- fviz_cluster(kmeans_result_2, geom = "point", data = df_centroid,ellipse = TRUE) + ggtitle("k = 2")
+p2 <- fviz_cluster(kmeans_result_3, geom = "point", data = df_centroid,ellipse = TRUE) + ggtitle("k = 3")
+p3 <- fviz_cluster(kmeans_result_4, geom = "point", data = df_centroid,ellipse = TRUE) + ggtitle("k = 4")
+p4 <- fviz_cluster(kmeans_result_5, geom = "point", data = df_centroid,ellipse = TRUE) + ggtitle("k = 5")
+p5 <- fviz_cluster(kmeans_result_6, geom = "point", data = df_centroid,ellipse = TRUE) + ggtitle("k = 6")
+p6 <- fviz_cluster(kmeans_result_7, geom = "point", data = df_centroid,ellipse = TRUE) + ggtitle("k = 7")
+
+library(gridExtra)
+grid.arrange(p1, p2, p3, p4, p5, p6 ,nrow = 3)
+
+```
+```{r}
+################### Question 2:Create the WSS plots as demonstrated in class and select a suitable k 
+###################             value based on the “elbow”. [Use the code that we discuss in the class.] 
+
+library("cluster")
+#function to compute total within-cluster sum of square 
+wss <- sapply(2:7, function(k) {
+  kmeans_model <- kmeans(df_centroid, centers = k, nstart = 10)
+  return(kmeans_model$tot.withinss)
+})
+
+# Plot the WSS Values
+plot(2:7, wss, type = "b", xlab = "Number of Clusters (k)", ylab = "Within-cluster sum of squares (WSS)")
+
+# Identify the elbow point
+fviz_nbclust(df_centroid, kmeans, method = "wss")
+
+print("The optimal number of clusters is 3, as thereafter there is no much change in variation.")
+```
+
+
